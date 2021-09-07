@@ -1,25 +1,25 @@
 # Movie Reservation
 # 서비스 시나리오
 ### 기능적 요구사항
-1. 고객이 영화를 예약한다
+1. 고객이 차량을 예약한다
 2. 고객이 결제한다.
-3. 고객이 영화표를 출력한다
+3. 고객이 차량을 대여한다
 4. 나의 예약현황에서 예약현황 및 상태를 조회할 수 있다.
 5. 고객이 예약을 취소 할 수 있다.
-6. 고객이 예약을 취소하면 결제취소 및 티켓취소가 되어야 한다.
+6. 고객이 예약을 취소하면 결제취소 및 차량 취소가 되어야 한다.
 
 ### 비기능적 요구사항
 1. 트랜젝션
    1. 예약시 결제정보가 반드시 등록되어야 한다.  → REQ/RES Sync 호출
 2. 장애격리
-   1. 티켓팅에서 장애가 발송해도 예약 및 결제는 가능해야 한다 →Async(event-driven), Eventual Consistency
-   1. 결재가 과중되면 결재를 잠시 후에 하도록 유도한다 → Circuit breaker, fallback
+   1. 차량 대여에서 장애가 발송해도 예약 및 결제는 가능해야 한다 →Async(event-driven), Eventual Consistency
+   1. 결제가 과중되면 결제를 잠시 후에 하도록 유도한다 → Circuit breaker, fallback
 3. 성능
-   1. 고객이 예약상태를 주문내역조회에서 확인할 수 있어야 한다 → CQRS
+   1. 고객이 예약상태를 예약내역조회에서 확인할 수 있어야 한다 → CQRS
 
 
 # Event Storming 결과
-![image](https://user-images.githubusercontent.com/86760622/130416307-f2fc6258-6512-4a41-bb9e-787cb997ceae.png)
+![image](https://user-images.githubusercontent.com/86760613/132315099-3764682a-389a-4aba-a8c9-7444e098e622.png)
 
 
 # 헥사고날 아키텍처 다이어그램 도출
