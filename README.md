@@ -23,7 +23,7 @@
 
 
 # 헥사고날 아키텍처 다이어그램 도출
-![image](https://user-images.githubusercontent.com/86760613/131060623-ad62a938-b703-43d6-b23e-f6f6a317e942.png)
+![image](https://user-images.githubusercontent.com/86760613/132315273-42cc8077-22c0-43db-92c7-2186fce9a44f.png)
 
 # 구현
 분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다. (각각의 포트넘버는 8080 ~ 8084이다)
@@ -37,7 +37,7 @@ mvn spring-boot:run
 cd Pay
 mvn spring-boot:run
 
-cd Ticket
+cd Rent
 mvn spring-boot:run
 
 cd MyReservation
@@ -50,7 +50,7 @@ Entity Pattern과 Repository Pattern을 적용하기 위해 Spring Data REST의 
 
 **Reservation 서비스의 Reservation.java**
 ```java 
-package movie;
+package rentcar;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -64,39 +64,36 @@ public class Reservation {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private String userid;
-    private String movie;
-    private String theater;
-    private String time;
-    private String seatNo;
-    private Integer price;
-    private String cardNo;
+    private String userName;
+    private String userHp;
+    private String carId;
+    private String period;
+    private String price;
     private String status;
 
     @PostPersist
     public void onPostPersist(){
         Reserved reserved = new Reserved();
         BeanUtils.copyProperties(this, reserved);
-        reserved.setStatus("Reserved");  // 예약상태 입력 by khos
+        reserved.setStatus("Reserved");  // 예약상태 입력
         reserved.publishAfterCommit();
 
         //Following code causes dependency to external APIs
         // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
 
-        movie.external.Pay pay = new movie.external.Pay();
+        rentcar.external.Pay pay = new rentcar.external.Pay();
         // mappings goes here
-        BeanUtils.copyProperties(this, pay); // Pay 값 설정 by khos
+        BeanUtils.copyProperties(this, pay); // Pay 값 
         pay.setReservationId(reserved.getId());
-        pay.setStatus("reserved"); // Pay 값 설정 by khos
-        ReservationApplication.applicationContext.getBean(movie.external.PayService.class)
+        pay.setStatus("Reserved"); // 예약상태
+        ReservationApplication.applicationContext.getBean(rentcar.external.PayService.class)
             .pay(pay);
 
     }
-    @PreRemove
-    public void onPreRemove(){
+    @PostUpdate
+    public void onPostUpdate(){
         CanceledReservation canceledReservation = new CanceledReservation();
         BeanUtils.copyProperties(this, canceledReservation);
-        canceledReservation.setStatus("Canceled Reservation");  // 예약상태 입력 by khos
         canceledReservation.publishAfterCommit();
 
     }
@@ -108,54 +105,40 @@ public class Reservation {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getUserid() {
-        return userid;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUserid(String userid) {
-        this.userid = userid;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
-    public String getMovie() {
-        return movie;
-    }
-
-    public void setMovie(String movie) {
-        this.movie = movie;
-    }
-    public String getTheater() {
-        return theater;
+    public String getUserHp() {
+        return userHp;
     }
 
-    public void setTheater(String theater) {
-        this.theater = theater;
+    public void setUserHp(String userHp) {
+        this.userHp = userHp;
     }
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
-    }
-    public String getSeatNo() {
-        return seatNo;
+    public String getCarId() {
+        return carId;
     }
 
-    public void setSeatNo(String seatNo) {
-        this.seatNo = seatNo;
+    public void setCarId(String carId) {
+        this.carId = carId;
     }
-    public Integer getPrice() {
+    public String getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(String period) {
+        this.period = period;
+    }
+    public String getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(String price) {
         this.price = price;
-    }
-    public String getCardNo() {
-        return cardNo;
-    }
-
-    public void setCardNo(String cardNo) {
-        this.cardNo = cardNo;
     }
     public String getStatus() {
         return status;
@@ -165,15 +148,16 @@ public class Reservation {
         this.status = status;
     }
 
+
 }
 
 ```
 
 **Pay 서비스의 PolicyHandler.java**
 ```java
-package movie;
+package rentcar;
 
-import movie.config.kafka.KafkaProcessor;
+import rentcar.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -185,6 +169,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
 public class PolicyHandler{
     @Autowired PayRepository payRepository;
@@ -192,14 +177,13 @@ public class PolicyHandler{
     @StreamListener(KafkaProcessor.INPUT)
     public void wheneverCanceledReservation_CancelPay(@Payload CanceledReservation canceledReservation){
 
-         try {
+        try {
             if (!canceledReservation.validate()) return;
                 // view 객체 조회
-
-                    List<Pay> payList = payRepository.findByReservationId(canceledReservation.getId());
-                    for(Pay pay : payList){
-                    // view 객체에 이벤트의 eventDirectValue 를 set 함
-                    pay.setStatus(canceledReservation.getStatus());
+                List<Pay> payList = payRepository.findByReservationId(canceledReservation.getId());
+                for(Pay pay : payList){
+                // view 객체에 이벤트의 eventDirectValue 를 set 함
+                pay.setStatus(canceledReservation.getStatus()); 
                 // view 레파지 토리에 save
                 payRepository.save(pay);
                 }
@@ -214,6 +198,7 @@ public class PolicyHandler{
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString){}
 
+
 }
 
 ```
@@ -221,7 +206,7 @@ public class PolicyHandler{
 
 **Pay 서비스의 Pay.java**
 ```java
-package movie;
+package rentcar;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -236,37 +221,29 @@ public class Pay {
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
     private Long reservationId;
-    private String userid;
-    private String movie;
-    private String theater;
-    private String time;
-    private Integer price;
+    private String userName;
+    private String userHp;
+    private String carId;
+    private String period;
+    private String price;
     private String cardNo;
     private String status;
-    private String seatNo;
 
-    @PostPersist
-    public void onPostPersist(){
-        Payed payed = new Payed();
-        BeanUtils.copyProperties(this, payed);
-        payed.publishAfterCommit();
-
-    }
+    
 
     @PostUpdate
     public void onPostUpdate(){
-        Payed payed = new Payed();
-        BeanUtils.copyProperties(this, payed);
-        payed.publishAfterCommit();
-    }
-
-    @PreRemove
-    public void onPreRemove(){
-        CanceledPay canceledPay = new CanceledPay();
-        BeanUtils.copyProperties(this, canceledPay);
-        canceledPay.setStatus("Canceled Payment");  // 상태 변경 by khos
-        canceledPay.publishAfterCommit();
-
+        if(status.equals("payed")){
+            Payed payed = new Payed();
+            BeanUtils.copyProperties(this, payed);
+            payed.publishAfterCommit();
+        }
+        
+        if(status.equals("canceled")){
+            CanceledPay canceledPay = new CanceledPay();
+            BeanUtils.copyProperties(this, canceledPay);
+            canceledPay.publishAfterCommit();
+        }
     }
 
     public Long getId() {
@@ -283,39 +260,39 @@ public class Pay {
     public void setReservationId(Long reservationId) {
         this.reservationId = reservationId;
     }
-    public String getUserid() {
-        return userid;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUserid(String userid) {
-        this.userid = userid;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
-    public String getMovie() {
-        return movie;
-    }
-
-    public void setMovie(String movie) {
-        this.movie = movie;
-    }
-    public String getTheater() {
-        return theater;
+    public String getUserHp() {
+        return userHp;
     }
 
-    public void setTheater(String theater) {
-        this.theater = theater;
+    public void setUserHp(String userHp) {
+        this.userHp = userHp;
     }
-    public String getTime() {
-        return time;
+    public String getCarId() {
+        return carId;
     }
 
-    public void setTime(String time) {
-        this.time = time;
+    public void setCarId(String carId) {
+        this.carId = carId;
     }
-    public Integer getPrice() {
+    public String getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(String period) {
+        this.period = period;
+    }
+    public String getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(String price) {
         this.price = price;
     }
     public String getCardNo() {
@@ -332,23 +309,19 @@ public class Pay {
     public void setStatus(String status) {
         this.status = status;
     }
-    public String getSeatNo() {
-        return seatNo;
-    }
 
-    public void setSeatNo(String seatNo) {
-        this.seatNo = seatNo;
-    }
+
 
 
 }
 
-```
-**Ticket 서비스의 PolicyHandler.java**
-```java
-package movie;
 
-import movie.config.kafka.KafkaProcessor;
+```
+**Rent 서비스의 PolicyHandler.java**
+```java
+package rentcar;
+
+import rentcar.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -360,76 +333,70 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-
 @Service
 public class PolicyHandler{
-    @Autowired TicketRepository ticketRepository;
+    @Autowired RentRepository rentRepository;
 
     @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverReserved_Ticket(@Payload Reserved reserved){
-
-        if(!reserved.validate()) return;
-
-        System.out.println("\n\n##### listener Ticket : " + reserved.toJson() + "\n\n");
-
-
-        // Sample Logic // ticket 데이터 저장 
-        Ticket ticket = new Ticket();
-        ticket.setMovie(reserved.getMovie());
-        //ticket.setPayId(reserved.getId());
-        ticket.setReservationId(reserved.getId());
-        ticket.setSeatNo(reserved.getSeatNo());
-        ticket.setStatus(reserved.getStatus());
-        ticket.setTheater(reserved.getTheater());
-        ticket.setTime(reserved.getTime());
-        ticket.setUserid(reserved.getUserid());
-        ticketRepository.save(ticket);
-
-        // ticket 데이터 저장 
-    }
-
-
-    @StreamListener(KafkaProcessor.INPUT)
-    public void whenPayed__Ticket(@Payload Payed payed) {
-        try {
+    public void wheneverPayed_Rent(@Payload Payed payed){
+ 
             if (!payed.validate()) return;
+            // Sample Logic // rent 데이터 저장 
+            Rent rent = new Rent();
+
+            rent.setPayId(payed.getId());
+            rent.setReservationId(payed.getReservationId());
+            rent.setStatus(payed.getStatus());
+            rent.setUserName(payed.getUserName());
+            rentRepository.save(rent);
+
+            // rent 데이터 저장 
+
+    
+    }
+    
+    @StreamListener(KafkaProcessor.INPUT)
+    public void wheneverCanceledPay_CancelRent(@Payload CanceledPay canceledPay){
+
+        try {
+            if (!canceledPay.validate()) return;
                 // view 객체 조회
 
-                    List<Ticket> ticketList = ticketRepository.findByReservationId(payed.getReservationId());
-                    for(Ticket ticket : ticketList){
+                    List<Rent> rentList = rentRepository.findByReservationId(canceledPay.getId());
+                    for(Rent rent : rentList){
                     // view 객체에 이벤트의 eventDirectValue 를 set 함
-                    ticket.setPayId(payed.getId());
-                    ticket.setStatus(payed.getStatus());
+                    rent.setStatus(canceledPay.getStatus());
                 // view 레파지 토리에 save
-                ticketRepository.save(ticket);
+                rentRepository.save(rent);
                 }
 
         }catch (Exception e){
             e.printStackTrace();
-        }
+        }       
+
+
     }
 
-
     @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverCanceledPay_CancelTicket(@Payload CanceledReservation canceledReservation){
-      
+    public void wheneverCanceledReservation_CancelRent(@Payload CanceledReservation canceledReservation){
+
         try {
             if (!canceledReservation.validate()) return;
                 // view 객체 조회
-
-                    List<Ticket> ticketList = ticketRepository.findByReservationId(canceledReservation.getId());
-                    for(Ticket ticket : ticketList){
-                    // view 객체에 이벤트의 eventDirectValue 를 set 함
-                    ticket.setStatus(canceledReservation.getStatus());
+                List<Rent> rentList = rentRepository.findByReservationId(canceledReservation.getId());
+                for(Rent rent : rentList){
+                // view 객체에 이벤트의 eventDirectValue 를 set 함
+                rent.setStatus(canceledReservation.getStatus()); 
                 // view 레파지 토리에 save
-                ticketRepository.save(ticket);
+                rentRepository.save(rent);
                 }
 
         }catch (Exception e){
             e.printStackTrace();
         }
-        
+
     }
+
 
 
     @StreamListener(KafkaProcessor.INPUT)
@@ -443,9 +410,9 @@ public class PolicyHandler{
 
 
 
-**Ticket 서비스의 Ticket.java**
+**Rent 서비스의 Rent.java**
 ```java
-package movie;
+package rentcar;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -453,42 +420,36 @@ import java.util.List;
 import java.util.Date;
 
 @Entity
-@Table(name="Ticket_table")
-public class Ticket {
+@Table(name="Rent_table")
+public class Rent {
 
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
     private Long reservationId;
     private Long payId;
-    private String userid;
-    private String movie;
-    private String theater;
-    private String time;
-    private String seatNo;
+    private String userName;
     private String status;
-
+    
     @PostPersist
     public void onPostPersist(){
-        Ticketed ticketed = new Ticketed();
-        BeanUtils.copyProperties(this, ticketed);
-        ticketed.publishAfterCommit();
+        Rented rented = new Rented();
+        BeanUtils.copyProperties(this, rented);
+        rented.publishAfterCommit(); 
 
-    }
-
+    } 
+     
     @PostUpdate
     public void onPostUpdate(){
-        Ticketed ticketed = new Ticketed();
-        BeanUtils.copyProperties(this, ticketed);
-        ticketed.publishAfterCommit();
+        /*
+        Rented rented = new Rented();
+        BeanUtils.copyProperties(this, rented);
+        rented.publishAfterCommit();
+        */
 
-    }
-
-    @PreRemove
-    public void onPreRemove(){
-        CanceledTicket canceledTicket = new CanceledTicket();
-        BeanUtils.copyProperties(this, canceledTicket);
-        canceledTicket.publishAfterCommit();
+        CanceledRent canceledRent = new CanceledRent();
+        BeanUtils.copyProperties(this, canceledRent);
+        canceledRent.publishAfterCommit();
 
     }
 
@@ -513,40 +474,12 @@ public class Ticket {
     public void setPayId(Long payId) {
         this.payId = payId;
     }
-    public String getUserid() {
-        return userid;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUserid(String userid) {
-        this.userid = userid;
-    }
-    public String getMovie() {
-        return movie;
-    }
-
-    public void setMovie(String movie) {
-        this.movie = movie;
-    }
-    public String getTheater() {
-        return theater;
-    }
-
-    public void setTheater(String theater) {
-        this.theater = theater;
-    }
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
-    }
-    public String getSeatNo() {
-        return seatNo;
-    }
-
-    public void setSeatNo(String seatNo) {
-        this.seatNo = seatNo;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
     public String getStatus() {
         return status;
@@ -556,13 +489,16 @@ public class Ticket {
         this.status = status;
     }
 
+
+
+
 }
 
 ```
 
 DDD 적용 후 REST API의 테스트를 통하여 정상적으로 동작하는 것을 확인할 수 있었다.
 
-- Resevation 서비스 호출 결과 
+- Reservation 서비스 호출 결과 
 
 ![image](https://user-images.githubusercontent.com/86760622/130421675-11836da1-dbe8-48b5-a241-90a1855b7a96.png)
 
@@ -570,7 +506,7 @@ DDD 적용 후 REST API의 테스트를 통하여 정상적으로 동작하는 �
 
 ![image](https://user-images.githubusercontent.com/86760622/130421919-df745446-0c4d-42f6-9792-fcb399062966.png)
 
-- Ticket 서비스 호출 결과
+- Rent 서비스 호출 결과
 
 ![image](https://user-images.githubusercontent.com/86760622/130422013-a3e30485-5869-4716-84fe-a3a3b49c3277.png)
 
@@ -631,6 +567,11 @@ spring:
 # CQRS/saga/correlation
 Materialized View를 구현하여, 타 마이크로서비스의 데이터 원본에 접근없이(Composite 서비스나 조인SQL 등 없이)도 내 서비스의 화면 구성과 잦은 조회가 가능하게 구현해 두었다. 
 본 프로젝트에서 View 역할은 MyReservation 서비스가 수행한다.
+
+예약 실행 후 MyReservation 화면 - reserved 상태로 예약정보 등록
+![image](https://user-images.githubusercontent.com/86760613/132316628-38e18a2f-5be2-4a96-ace1-26e2e39ab057.png)
+![image](https://user-images.githubusercontent.com/86760613/132316776-5f021fe0-dd91-4eba-9322-1d58dda4bf07.png)
+
 
 예약 실행 후 MyReservation 화면
 
