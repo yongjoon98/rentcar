@@ -512,7 +512,7 @@ DDD 적용 후 REST API의 테스트를 통하여 정상적으로 동작하는 �
 
 - MyReservation 서비스 호출 결과 
 
-![image](https://user-images.githubusercontent.com/86760613/132431894-0743b6be-6115-4cd8-b581-b645c984a925.png)
+![image](https://user-images.githubusercontent.com/86760613/132432203-926a0d87-35ea-40ec-9530-8317b3bab158.png)
 
 
 
