@@ -1137,6 +1137,7 @@ kubectl rollout restart deployment myreservation
 
 
 * siege의 결과 (일부 요청이 실패로 처리된다.)
+
 ![무준단재배포 실패](https://user-images.githubusercontent.com/53825723/131072563-66762551-fd37-4131-b8f4-4996f2103179.JPG)
 
 * Readiness 설정이 있는 경우(deployment에서 Readiness 설정을 추가한 후 배포한다.)
@@ -1163,6 +1164,7 @@ siege -c1000 -t60S  -v http://myreservation:8080/myReservations
 kubectl rollout restart deployment myreservation 
 
 * siege의 결과 ( 모든 요청이 성공한다.)
+
 ![무준단재배포 성공](https://user-images.githubusercontent.com/53825723/131072557-7644e669-3b08-4cf3-b4bd-1399588f3332.JPG)
 
 * Readiness 설정을 통해 무정지 재배포를 구현한다.
