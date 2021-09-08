@@ -707,6 +707,7 @@ public class PayServiceImpl implements PayService {
 ```
 
 Fallback 결과(Pay service 종료 후 예약실행 추가 시)
+
 ![image](https://user-images.githubusercontent.com/86760613/132434599-a5d07197-c4c1-4c46-a028-4244b7a0fb03.png)
 
 # 운영
