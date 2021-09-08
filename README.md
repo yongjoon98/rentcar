@@ -1076,24 +1076,100 @@ kubectl get deploy myreservation -w
 ![image](https://user-images.githubusercontent.com/86760613/132450381-914922fb-9ba3-4064-9ed5-ba8d782294ab.png)
 
 
+
 ## 무정지 재배포 (Readiness Probe)
-* 배포전
+* Readiness 설정이 없는 경우(deployment에서 Readiness 설정을 제거한 후 배포한다.)
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myreservation
+  labels:
+    app: myreservation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myreservation
+  template:
+    metadata:
+      labels:
+        app: myreservation
+    spec:
+      containers:
+        - name: myreservation
+          image: user1919.azurecr.io/myreservation:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 120
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+          resources:
+            limits:
+              cpu: 500m
+            requests:
+              cpu: 200m
+          env:
+          - name: PROFILE
+            valueFrom:
+              configMapKeyRef:
+                name: profile-cm
+                key: profile        
+```
+```
+kubectl apply -f MyReservation/kubernetes/deployment.yaml
+```
+* siege로 부하테스트를 한다. (워크로드 1000명, 1분)
+```
+kubectl exec -it pod/siege -c siege -- /bin/bash
+siege -c1000 -t60S  -v http://myreservation:8080/myReservations
+```
 
-![image](https://user-images.githubusercontent.com/5147735/109743733-89526280-7c14-11eb-93da-0ddd3cd18e22.png)
+* pod를 재배포 한다.
 
-* 배포중
-
-![image](https://user-images.githubusercontent.com/5147735/109744076-11386c80-7c15-11eb-849d-6cf4e2c72675.png)
-![image](https://user-images.githubusercontent.com/5147735/109744186-3a58fd00-7c15-11eb-8da3-f11b6194fc6b.png)
-
-* 배포후
-
-![image](https://user-images.githubusercontent.com/5147735/109744225-45139200-7c15-11eb-8efa-07ac40162ded.png)
+kubectl rollout restart deployment myreservation 
 
 
+* siege의 결과 (일부 요청이 실패로 처리된다.)
+![무준단재배포 실패](https://user-images.githubusercontent.com/53825723/131072563-66762551-fd37-4131-b8f4-4996f2103179.JPG)
+
+* Readiness 설정이 있는 경우(deployment에서 Readiness 설정을 추가한 후 배포한다.)
+```
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+```
+```
+kubectl apply -n huijun -f MyReservation/kubernetes/deployment.yaml
+```
+* siege로 부하테스트를 한다. (워크로드 1000명, 1분)
+```
+kubectl exec -it pod/siege -c siege -- /bin/bash
+siege -c1000 -t60S  -v http://myreservation:8080/myReservations
+```
+
+* pod를 재배포 한다.
+kubectl rollout restart deployment myreservation 
+
+* siege의 결과 ( 모든 요청이 성공한다.)
+![무준단재배포 성공](https://user-images.githubusercontent.com/53825723/131072557-7644e669-3b08-4cf3-b4bd-1399588f3332.JPG)
+
+* Readiness 설정을 통해 무정지 재배포를 구현한다.
 
 
 ## Self-healing (Liveness Probe)
+<!-- 
 * order 서비스 deployment.yml   livenessProbe 설정을 port 8089로 변경 후 배포 하여 liveness probe 가 동작함을 확인 
 ```
     livenessProbe:
@@ -1102,10 +1178,45 @@ kubectl get deploy myreservation -w
         port: 8089
       initialDelaySeconds: 5
       periodSeconds: 5
-```
+``` 
 
 ![image](https://user-images.githubusercontent.com/5147735/109740864-4fcb2880-7c0f-11eb-86ad-2aabb0197881.png)
-![image](https://user-images.githubusercontent.com/5147735/109742082-c0734480-7c11-11eb-9a57-f6dd6961a6d2.png)
+![image](https://user-images.githubusercontent.com/5147735/109742082-c0734480-7c11-11eb-9a57-f6dd6961a6d2.png)-->
+
+
+* pod에 연결이 불가능할 경우 
+    * 8090포트로 요청해야 하는 경우 가정
+    * Deployment.yaml
+```yaml
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8090
+            initialDelaySeconds: 60
+            timeoutSeconds: 2
+            periodSeconds: 5
+```
+* Pod를 계속 재시작 한다.
+
+![Liveness](https://user-images.githubusercontent.com/53825723/131075307-5c1d1b88-ab90-47e7-be08-e2db0390d2c1.JPG)
+
+* Pod에 연결이 가능할 경우  
+    * 8080포트로 상태 확인
+```yaml
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 2
+            periodSeconds: 5
+```
+
+* Pod가 정상적으로 띄워진다.
+
+![Liveness성공](https://user-images.githubusercontent.com/53825723/131075311-d00cabb0-e30e-4311-8fbf-d731efe307c5.JPG)
+
+* Liveness 설정이 안되어 있는 경우 Pod의 상태는 Running 이지만 연결이 불가능 할 수 있다.
 
 
 
