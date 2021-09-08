@@ -882,6 +882,72 @@ spec:
 ```
 
 
+## 서킷 브레이킹
+* 서킷 브레이킹 프레임워크의 선택: Spring FeignClient + Hystrix 옵션을 사용하여 구현함
+* Reservation -> Pay 와의 Req/Res 연결에서 요청이 과도한 경우 CirCuit Breaker 통한 격리
+* Hystrix 를 설정: 요청처리 쓰레드에서 처리시간이 610 밀리가 넘어서기 시작하여 어느정도 유지되면 CB 회로가 닫히도록 (요청을 빠르게 실패처리, 차단) 설정
+
+```
+// Reservation 서비스 application.yml
+
+feign:
+  hystrix:
+    enabled: true
+
+hystrix:
+  command:
+    default:
+      execution.isolation.thread.timeoutInMilliseconds: 1500
+```
+
+
+```
+// Pay 서비스 Pay.java
+
+   @PostPersist
+    public void onPostPersist(){
+       
+        try {
+            Thread.currentThread().sleep((long) (1000 + Math.random() * 220));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+* siege.yaml
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: siege
+spec:
+  containers:
+  - name: siege
+    image: apexacme/siege-nginx
+```
+
+* siege pod 생성
+```
+/home/project/rentcar/yaml/kubectl apply -f siege.yaml
+```
+
+* 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인: 동시사용자 100명 60초 동안 실시
+```
+kubectl exec -it pod/siege -c siege -- /bin/bash
+siege -c100 -t30S  -v --content-type "application/json" 'http://reservation:8080/reservations POST {"username":"LK"}'
+
+```
+
+![image](https://user-images.githubusercontent.com/86760613/132447885-d24ef86c-7ebf-4e05-91a9-c025fee8723d.png)
+
+
+
+* fallback 설정시
+![image](https://user-images.githubusercontent.com/86760613/132447653-edfa07d2-a3a1-41fe-94aa-ce88e487dc24.png)
+![image](https://user-images.githubusercontent.com/86760613/132447621-011e157a-feab-4982-8ebc-2e27e331ec8e.png)
+
+
 
 ## ConfigMap
 * MyReservation을 실행할 때 환경변수 사용하여 활성 프로파일을 설정한다.
@@ -909,123 +975,30 @@ kubectl create configmap profile-cm --from-literal=profile=docker
 ```
 kubectl get cm profile-cm -o yaml 
 ```
-![configmap](https://user-images.githubusercontent.com/53825723/131068300-7691fb19-bed0-4277-b535-1e53e0fcf0a7.JPG)
+
+![image](https://user-images.githubusercontent.com/86760613/132448198-f521fcc3-bb4f-4bd0-aafd-d0d8f93df01c.png)
+
 
 * 다시 배포한다.
 ```
 mvn package
-docker build -t user1919.azurecr.io/myreservation .
-docker push user1919.azurecr.io/myreservation
+docker build -t user18.azurecr.io/myreservation .
+docker push user18.azurecr.io/myreservation
 kubectl apply -f kubernetes
 ```
 
 * pod의 로그 확인
 ```
-kubectl logs myreservation-5fd5475c4d-9bkzd
+kubectl logs myreservation-7bfcd96bb9-w5shq
 ```
-![configmapapplication로그](https://user-images.githubusercontent.com/53825723/131068733-3eed09a3-0af2-422a-a77d-67c6312b0647.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132448529-d298abc2-a4af-47b4-80a6-1d6141f5a9fb.png)
 
 
 * pod의 sh에서 환경변수 확인
 ```
-kubectl exec myreservation-5fd5475c4d-9bkzd -it -- sh
+kubectl exec myreservation-7bfcd96bb9-w5shq -it -- sh
 ```
-![configmapcontainer로그](https://user-images.githubusercontent.com/53825723/131068737-668acff9-33cc-4716-af9c-23d33af33e0d.JPG)
-
-
-
-
-### 수정 반영
-* gateway의 `/acuator/env`는 기본적으로 자단된다.
-```
-http 20.200.200.132:8080/actuator/env
-```
-![변경 전](https://user-images.githubusercontent.com/53825723/131063296-ff43e4f5-2a08-4c29-a53e-78dce60af7ca.JPG)
-
-* application.yaml에서 `/acuator/env`를 허용하도록 수정한다.
-```yaml
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-```
-
-* 스크립트 실핼
-![파이프라인 실행](https://user-images.githubusercontent.com/53825723/131064003-6fb6d07a-1eaa-4e77-a49b-fc4bb4b52b3b.JPG)
-* Pod 확인
-```
-kubectl get pod
-```
-![pod restart](https://user-images.githubusercontent.com/53825723/131063803-f024720c-341a-4dc3-916a-62ffb3a221e9.JPG)
-
-* 수정 내용이 반영되어 `/acuator/env`가 허용된다.
-```
-http 20.200.200.132:8080/actuator/env
-```
-![변경 후](https://user-images.githubusercontent.com/53825723/131063298-e4a1bea1-28ca-4b69-afe4-198302d8c387.JPG)
-
-## 서킷 브레이킹
-* 서킷 브레이킹 프레임워크의 선택: Spring FeignClient + Hystrix 옵션을 사용하여 구현함
-* Order -> Pay 와의 Req/Res 연결에서 요청이 과도한 경우 CirCuit Breaker 통한 격리
-* Hystrix 를 설정: 요청처리 쓰레드에서 처리시간이 610 밀리가 넘어서기 시작하여 어느정도 유지되면 CB 회로가 닫히도록 (요청을 빠르게 실패처리, 차단) 설정
-
-```
-// Order서비스 application.yml
-
-feign:
-  hystrix:
-    enabled: true
-
-hystrix:
-  command:
-    default:
-      execution.isolation.thread.timeoutInMilliseconds: 610
-```
-
-
-```
-// Pay 서비스 Pay.java
-
- @PostPersist
-    public void onPostPersist(){
-        Payed payed = new Payed();
-        BeanUtils.copyProperties(this, payed);
-        payed.setStatus("Pay");
-        payed.publishAfterCommit();
-
-        try {
-                 Thread.currentThread().sleep((long) (400 + Math.random() * 220));
-         } catch (InterruptedException e) {
-                 e.printStackTrace();
-         }
-```
-
-* /home/project/team/forthcafe/yaml/siege.yaml
-```
-apiVersion: v1
-kind: Pod
-metadata:
-  name: siege
-spec:
-  containers:
-  - name: siege
-    image: apexacme/siege-nginx
-```
-
-* siege pod 생성
-```
-/home/project/team/forthcafe/yaml/kubectl apply -f siege.yaml
-```
-
-* 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인: 동시사용자 100명 60초 동안 실시
-```
-kubectl exec -it pod/siege -c siege -- /bin/bash
-siege -c100 -t60S  -v --content-type "application/json" 'http://{EXTERNAL-IP}:8080/orders POST {"memuId":2, "quantity":1}'
-siege -c100 -t30S  -v --content-type "application/json" 'http://52.141.61.164:8080/orders POST {"memuId":2, "quantity":1}'
-```
-![image](https://user-images.githubusercontent.com/5147735/109762408-dd207400-7c33-11eb-8464-325d781867ae.png)
-![image](https://user-images.githubusercontent.com/5147735/109762376-d1cd4880-7c33-11eb-87fb-b739aa2d6621.png)
+![image](https://user-images.githubusercontent.com/86760613/132448681-e71ac11c-e546-46bd-a9af-06438f87a933.png)
 
 
 
