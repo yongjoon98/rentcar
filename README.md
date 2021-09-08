@@ -1025,7 +1025,8 @@ kubectl autoscale deployment myreservation --cpu-percent=15 --min=1 --max=10
 ```
 kubectl get hpa
 ```
-![hpa적용확인](https://user-images.githubusercontent.com/53825723/131067613-81203ccb-1325-4af8-bcc3-aeea62990a70.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132449412-a055790b-bcd6-4d8d-8978-7c71997c97d6.png)
+
 
 * siege.yaml
 ```
@@ -1055,11 +1056,13 @@ siege -c1000 -t60S  -v http://myreservation:8080/myReservations
 ```
 kubectl get deploy myreservation -w
 ```
-![hpaDelploy수변경전](https://user-images.githubusercontent.com/53825723/131067624-43570d7e-354a-43fe-871b-cc7a8604b1b7.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132449486-361e287a-72c0-4f30-84b3-725b7e28942b.png)
+
 ```
  watch kubectl get pod
 ```
-![hpaPod수변경전](https://user-images.githubusercontent.com/53825723/131067628-d6870772-3008-4dde-80ec-2c471e29eb2d.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132449545-fc278a3a-8159-4416-a8fa-2c0522c92545.png)
+
 
 * 오토스케일 결과
 ```
