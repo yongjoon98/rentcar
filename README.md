@@ -500,19 +500,19 @@ DDD 적용 후 REST API의 테스트를 통하여 정상적으로 동작하는 �
 
 - Reservation 서비스 호출 결과 
 
-![image](https://user-images.githubusercontent.com/86760622/130421675-11836da1-dbe8-48b5-a241-90a1855b7a96.png)
+![image](https://user-images.githubusercontent.com/86760613/132430841-0d4ece3f-6b5f-443e-9acb-a9baf683b293.png)
 
 - Pay 서비스 호출 결과 
 
-![image](https://user-images.githubusercontent.com/86760622/130421919-df745446-0c4d-42f6-9792-fcb399062966.png)
+![image](https://user-images.githubusercontent.com/86760613/132431808-e77d33f9-d710-43bd-927c-b358e9867773.png)
 
 - Rent 서비스 호출 결과
 
-![image](https://user-images.githubusercontent.com/86760622/130422013-a3e30485-5869-4716-84fe-a3a3b49c3277.png)
+![image](https://user-images.githubusercontent.com/86760613/132431839-a41fcdca-b0ee-4edf-b53e-367f98fc9356.png)
 
 - MyReservation 서비스 호출 결과 
 
-![image](https://user-images.githubusercontent.com/86760622/130422106-b95d5fcf-92c8-438e-abdd-27250e32464c.png)
+![image](https://user-images.githubusercontent.com/86760613/132431894-0743b6be-6115-4cd8-b581-b645c984a925.png)
 
 
 
@@ -539,10 +539,10 @@ spring:
           uri: http://localhost:8082
           predicates:
             - Path=/pays/** 
-        - id: Ticket
+        - id: Rent
           uri: http://localhost:8083
           predicates:
-            - Path=/tickets/** 
+            - Path=/rents/** 
         - id: MyReservation
           uri: http://localhost:8084
           predicates:
@@ -560,7 +560,7 @@ spring:
 ```
 8080 port로 Reservation 서비스 정상 호출
 
-![image](https://user-images.githubusercontent.com/86760622/130422248-3f5dc3f6-7073-4b18-8ae5-50429dd94ab2.png)
+![image](https://user-images.githubusercontent.com/86760613/132432003-e2a7b86f-2c18-44fb-a73e-81da477bcbf8.png)
 
 
 
