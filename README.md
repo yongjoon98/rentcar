@@ -568,31 +568,34 @@ spring:
 Materialized View를 구현하여, 타 마이크로서비스의 데이터 원본에 접근없이(Composite 서비스나 조인SQL 등 없이)도 내 서비스의 화면 구성과 잦은 조회가 가능하게 구현해 두었다. 
 본 프로젝트에서 View 역할은 MyReservation 서비스가 수행한다.
 
-예약 실행 후 MyReservation 화면 - reserved 상태로 예약정보 등록
+예약 실행 후 Pay, MyReservation 화면 - reserved 상태로 예약정보 등록
 ![image](https://user-images.githubusercontent.com/86760613/132316628-38e18a2f-5be2-4a96-ace1-26e2e39ab057.png)
+![image](https://user-images.githubusercontent.com/86760613/132432368-b180561d-4599-4034-b292-a362a6a03733.png)
 ![image](https://user-images.githubusercontent.com/86760613/132316776-5f021fe0-dd91-4eba-9322-1d58dda4bf07.png)
 
 
-예약 실행 후 MyReservation 화면
+결제 후 Rent, MyReservation 화면 - payed 상태로 변경
 
-![image](https://user-images.githubusercontent.com/86760622/130897427-0daeaa06-3e32-40c1-86fa-f8f5bc304ad8.png)
+![image](https://user-images.githubusercontent.com/86760613/132432516-2ddb6132-96f4-4597-99a2-4d3c781b7919.png)
+![image](https://user-images.githubusercontent.com/86760613/132432576-f0f4447f-599d-45c2-b3ba-cf263a1ca534.png)
+![image](https://user-images.githubusercontent.com/86760613/132432632-71fd0463-b58f-430b-a1f9-db3ed1a910d3.png)
 
-결제 후 MyReservation 화면
 
-![image](https://user-images.githubusercontent.com/86760622/130897551-f2634bd8-4123-411a-9965-b522a4a13964.png)
+렌트 후 MyReservation 화면
 
-티켓팅 후 MyReservation 화면
+![image](https://user-images.githubusercontent.com/86760613/132432700-d69323d0-21fa-48e9-9d5f-8ad86ffe2366.png)
+![image](https://user-images.githubusercontent.com/86760613/132432731-5d8eebc0-03b5-4688-b7e1-ddb79a362b91.png)
 
-![image](https://user-images.githubusercontent.com/86760622/130897619-0c864297-00c6-48f8-aa0f-4050946db82c.png)
 
 예약취소 후 MyReservation 화면
 
-![image](https://user-images.githubusercontent.com/86760622/130897740-f379f06e-3906-423c-bdb7-21fdb80acceb.png)
+![image](https://user-images.githubusercontent.com/86760613/132432774-d1ad54a5-5fff-4e39-bcdb-0890ee684137.png)
+![image](https://user-images.githubusercontent.com/86760613/132432796-239b6cd3-852a-41e1-ab73-c29c756ef2de.png)
 
 
-위와 같이 예약을 하게되면 Reservation > Pay > Ticket > MyReservation로 예약이 Assigned 되고
+위와 같이 예약을 하게되면 Reservation > Pay > Rent > MyReservation로 예약이 Assigned 되고
 
-예약 취소가 되면 Status가 Cancelled Reservation로 Update 되는 것을 볼 수 있다.
+예약 취소가 되면 Status가 cancelled로 Update 되는 것을 볼 수 있다.
 
 또한 Correlation을 Key를 활용하여 Id를 Key값을 하고 원하는 예약하고 서비스간의 공유가 이루어 졌다.
 
@@ -603,11 +606,11 @@ Reservation 서비스의 DB와 MyReservation의 DB를 다른 DB를 사용하여 
 
 **Reservation의 pom.xml DB 설정 코드**
 
-![image](https://user-images.githubusercontent.com/86760622/131057448-457e2423-f202-4582-b820-65c4d21e4b68.png)
+![image](https://user-images.githubusercontent.com/86760613/132432981-12b43253-3e86-4998-a0e7-62f5613473e4.png)
 
 **MyReservation의 pom.xml DB 설정 코드**
 
-![image](https://user-images.githubusercontent.com/86760622/131057400-b019383d-5444-4256-8f8f-9002d5eca14f.png)
+![image](https://user-images.githubusercontent.com/86760613/132433161-b6e9d6ee-0144-4f69-8b9b-663173a66b61.png)
 
 
 # 동기식 호출 과 Fallback 처리
@@ -617,7 +620,7 @@ Reservation 서비스의 DB와 MyReservation의 DB를 다른 DB를 사용하여 
 
 **Reservation 서비스 내 external.PayService.java**
 ```java
-package movie.external;
+package rentcar.external;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -639,26 +642,26 @@ public interface PayService {
 **동작 확인**
 
 Pay 서비스 중지함
-![image](https://user-images.githubusercontent.com/86760622/131061678-fec8d91c-e3a8-413b-960b-9f904c5f604c.png)
+![image](https://user-images.githubusercontent.com/86760613/132433476-0080d11c-ccee-4684-820f-32dcf7f01fda.png)
 
 
 예약시 Pay서비스 중지로 인해 예약 실패
-![image](https://user-images.githubusercontent.com/86760622/131061604-77f5654c-23e4-4414-9224-d9e439ae3a32.png)
+![image](https://user-images.githubusercontent.com/86760613/132433535-506e5284-26ae-47cb-92ea-1b0e83a71f9b.png)
 
 
 Pay 서비스 재기동 후 예약 성공함
-![image](https://user-images.githubusercontent.com/86760622/131062000-cdcbb6b1-790c-4809-9ba9-d995202b45ff.png)
+![image](https://user-images.githubusercontent.com/86760613/132433631-7fe51add-41c8-4133-a722-f406c7d1f758.png)
 
 
 Pay 서비스 조회시 정상적으로 예약정보가 등록됨
 
-![image](https://user-images.githubusercontent.com/86760622/131062120-8f310731-85b6-46c0-bdd6-caa6a22e2b09.png)
+![image](https://user-images.githubusercontent.com/86760613/132433715-c92f4264-dbc3-498b-aa41-1a3322c0f131.png)
 
 Fallback 설정 
 - external.PayService.java
 ```java
 
-package movie.external;
+package rentcar.external;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -679,7 +682,7 @@ public interface PayService {
 ```
 - external.PayServiceImpl.java
 ```java
-package movie.external;
+package rentcar.external;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -691,15 +694,10 @@ import java.util.Optional;
 public class PayServiceImpl implements PayService {
     
     public void pay(Pay pay) {
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
-        System.out.println("@@@@@@@결제 서비스 지연중 입니다. @@@@@@@@@@@@");
+        System.out.println("결제가 지연되고 있습니다.");
+        System.out.println("결제가 지연되고 있습니다.");
+        System.out.println("결제가 지연되고 있습니다.");
+        System.out.println("결제가 지연되고 있습니다.");
 
     }
 
@@ -709,7 +707,7 @@ public class PayServiceImpl implements PayService {
 ```
 
 Fallback 결과(Pay service 종료 후 예약실행 추가 시)
-![image](https://user-images.githubusercontent.com/86760622/131062766-99148589-21f6-4817-8fdd-331620f49e40.png)
+![image](https://user-images.githubusercontent.com/86760613/132434599-a5d07197-c4c1-4c46-a028-4244b7a0fb03.png)
 
 # 운영
 
@@ -738,7 +736,7 @@ kubectl get po -n kafka -o wide
 ```
 * Topic 생성
 ```
-kubectl -n kafka exec my-kafka-0 -- /usr/bin/kafka-topics --zookeeper my-kafka-zookeeper:2181 --topic movie --create --partitions 1 --replication-factor 1
+kubectl -n kafka exec my-kafka-0 -- /usr/bin/kafka-topics --zookeeper my-kafka-zookeeper:2181 --topic rentcar --create --partitions 1 --replication-factor 1
 ```
 * Topic 확인
 ```
@@ -746,17 +744,143 @@ kubectl -n kafka exec my-kafka-0 -- /usr/bin/kafka-topics --zookeeper my-kafka-z
 ```
 * 이벤트 발행하기
 ```
-kubectl -n kafka exec -ti my-kafka-0 -- /usr/bin/kafka-console-producer --broker-list my-kafka:9092 --topic movie
+kubectl -n kafka exec -ti my-kafka-0 -- /usr/bin/kafka-console-producer --broker-list my-kafka:9092 --topic rentcar
 ```
 * 이벤트 수신하기
 ```
-kubectl -n kafka exec -ti my-kafka-0 -- /usr/bin/kafka-console-consumer --bootstrap-server my-kafka:9092 --topic movie
+kubectl -n kafka exec -ti my-kafka-0 -- /usr/bin/kafka-console-consumer --bootstrap-server my-kafka:9092 --topic rentcar
 ```
 
-* 소스 가져오기
+## Deploy / Pipeline
+
+* Azure 레지스트리에 도커 이미지 push, deploy, 서비스생성(yml파일 이용한 deploy)
 ```
-git clone https://github.com/khosmi/movie.git
+# 각 마이크로 서비스의 deployment에서 이미지 수정 필요
+# label과 이미지 이름 소문자로 변경 필요
+
+
+cd Pay
+# jar 파일 생성
+mvn package
+# 이미지 빌드
+docker build -t user18.azurecr.io/pay .
+# acr에 이미지 푸시
+docker push user18.azurecr.io/pay
+# kubernetes에 service, deployment 배포
+kubectl apply -f kubernetes
+# Pod 재배포 
+# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
+# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
+kubectl rollout restart deployment pay  
+cd ..
+
+cd Reservation
+# jar 파일 생성
+mvn package
+# 이미지 빌드
+docker build -t user18.azurecr.io/reservation .
+# acr에 이미지 푸시
+docker push user18.azurecr.io/reservation
+# kubernetes에 service, deployment 배포
+kubectl apply -f kubernetes
+# Pod 재배포 
+# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
+# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
+kubectl rollout restart deployment reservation  
+cd ..
+
+cd Rent
+# jar 파일 생성
+mvn package
+# 이미지 빌드
+docker build -t user18.azurecr.io/rent .
+# acr에 이미지 푸시
+docker push user18.azurecr.io/rent
+# kubernetes에 service, deployment 배포
+kubectl apply -f kubernetes
+# Pod 재배포
+# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
+# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
+kubectl rollout restart deployment rent  
+cd ..
+
+cd gateway
+# jar 파일 생성
+mvn package
+# 이미지 빌드
+docker build -t user18.azurecr.io/gateway .
+# acr에 이미지 푸시
+docker push user18.azurecr.io/gateway
+# kubernetes에 service, deployment 배포
+kubectl create deploy gateway --image=user18.azurecr.io/gateway   
+kubectl expose deploy gateway --type=LoadBalancer --port=8080 
+
+kubectl rollout restart deployment gateway
+cd ..
+
+cd MyReservation
+# jar 파일 생성
+mvn package
+# 이미지 빌드
+docker build -t user18.azurecr.io/myreservation .
+# acr에 이미지 푸시
+docker push user18.azurecr.io/myreservation
+# kubernetes에 service, deployment 배포
+kubectl apply -f kubernetes
+# Pod 재배포
+# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
+# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
+kubectl rollout restart deployment myreservation  
+cd ..
+
 ```
+* Service, Pod, Deploy 상태 확인
+
+![image](https://user-images.githubusercontent.com/86760613/132436404-66032888-f0f7-4116-b869-7538435fe9fe.png)
+
+
+* deployment.yml  참고
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation
+  labels:
+    app: reservation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reservation
+  template:
+    metadata:
+      labels:
+        app: reservation
+    spec:
+      containers:
+        - name: reservation
+          image: user18.azurecr.io/reservation:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 120
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+```
+
+
 
 ## ConfigMap
 * MyReservation을 실행할 때 환경변수 사용하여 활성 프로파일을 설정한다.
@@ -807,104 +931,7 @@ kubectl exec myreservation-5fd5475c4d-9bkzd -it -- sh
 ```
 ![configmapcontainer로그](https://user-images.githubusercontent.com/53825723/131068737-668acff9-33cc-4716-af9c-23d33af33e0d.JPG)
 
-## Deploy / Pipeline
 
-* Azure 레지스트리에 도커 이미지 push, deploy, 서비스생성(yml파일 이용한 deploy)
-```
-# 각 마이크로 서비스의 deployment에서 이미지 수정 필요
-# label과 이미지 이름 소문자로 변경 필요
-
-
-cd Pay
-# jar 파일 생성
-mvn package
-# 이미지 빌드
-docker build -t user1919.azurecr.io/pay .
-# acr에 이미지 푸시
-docker push user1919.azurecr.io/pay
-# kubernetes에 service, deployment 배포
-kubectl apply -f kubernetes
-# Pod 재배포 
-# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
-# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
-kubectl rollout restart deployment pay  
-cd ..
-
-cd Reservation
-# jar 파일 생성
-mvn package
-# 이미지 빌드
-docker build -t user1919.azurecr.io/reservation .
-# acr에 이미지 푸시
-docker push user1919.azurecr.io/reservation
-# kubernetes에 service, deployment 배포
-kubectl apply -f kubernetes
-# Pod 재배포 
-# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
-# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
-kubectl rollout restart deployment reservation  
-cd ..
-
-cd Ticket
-# jar 파일 생성
-mvn package
-# 이미지 빌드
-docker build -t user1919.azurecr.io/ticket .
-# acr에 이미지 푸시
-docker push user1919.azurecr.io/ticket
-# kubernetes에 service, deployment 배포
-kubectl apply -f kubernetes
-# Pod 재배포
-# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
-# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
-kubectl rollout restart deployment ticket  
-cd ..
-
-cd gateway
-# jar 파일 생성
-mvn package
-# 이미지 빌드
-docker build -t user1919.azurecr.io/gateway .
-# acr에 이미지 푸시
-docker push user1919.azurecr.io/gateway
-# kubernetes에 service, deployment 배포
-kubectl create deploy gateway --image=user1919.azurecr.io/gateway   
-kubectl expose deploy gateway --type=LoadBalancer --port=8080 
-
-kubectl rollout restart deployment gateway
-cd ..
-
-cd MyReservation
-# jar 파일 생성
-mvn package
-# 이미지 빌드
-docker build -t user1919.azurecr.io/myreservation .
-# acr에 이미지 푸시
-docker push user1919.azurecr.io/myreservation
-# kubernetes에 service, deployment 배포
-kubectl apply -f kubernetes
-# Pod 재배포
-# Deployment가 변경되어야 새로운 이미지로 Pod를 실행한다.
-# Deployment가 변경되지 않아도 새로운 Image로 Pod 실행하기 위함
-kubectl rollout restart deployment myreservation  
-cd ..
-
-```
-* Service, Pod, Deploy 상태 확인
-
-![image](https://user-images.githubusercontent.com/86760528/131059867-8d387dc1-bac2-4d68-972b-1cc1d0629d78.png)
-
-
-* deployment.yml  참고
-```
-1. image 설정
-2. env 설정 (config Map) 
-3. readiness 설정 (무정지 배포)
-4. liveness 설정 (self-healing)
-5. resource 설정 (autoscaling)
-```
-
-![image](https://user-images.githubusercontent.com/86760528/131059850-1c47652c-72d2-413b-9e6d-3733d519c1e5.png)
 
 
 ### 수정 반영
