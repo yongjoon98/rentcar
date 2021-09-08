@@ -1068,11 +1068,12 @@ kubectl get deploy myreservation -w
 ```
 kubectl get deploy myreservation -w
 ```
-![hpaDelploy수변경후](https://user-images.githubusercontent.com/53825723/131067792-e708da59-817b-4d6c-b27f-e7b0e2b26d1a.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132450264-26fe2381-e210-418b-81e2-dc9eac96f90b.png)
+
 ```
  watch kubectl get pod
 ```
-![hpaPod수변경후](https://user-images.githubusercontent.com/53825723/131067798-ceb2bd23-69e5-4d2f-835d-c8e80fc2bfe3.JPG)
+![image](https://user-images.githubusercontent.com/86760613/132450381-914922fb-9ba3-4064-9ed5-ba8d782294ab.png)
 
 
 ## 무정지 재배포 (Readiness Probe)
